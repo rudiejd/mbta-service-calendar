@@ -2,6 +2,16 @@
 
 const apiUrl = "https://api-v3.mbta.com/services?filter[route]=1"
 
+interface Service {
+    startDate: string;
+    endDate: string;
+    validDays: number[];
+    removedDates: string[];
+    addedDates: string[];
+    description: string;
+    id: string;
+}
+
 function toGTFSDayOfWeek(day: number) {
     if (day == 0) {
         return 7;
@@ -14,23 +24,34 @@ function toISODateString(date: Date) {
     return date.toISOString().split('T')[0];
 }
 
+function buildService(attributes: any, id: string): Service {
+
+    return {
+        startDate: attributes.start_date,
+        endDate: attributes.end_date,
+        validDays: attributes.valid_days,
+        removedDates: attributes.removed_dates,
+        addedDates: attributes.added_dates,
+        description: attributes.description,
+        id: id
+    }
+}
+
 function createServiceDateMap(json: any) {
     let dateToServices = new Map();
-    for (const service of json.data) {
-        const startDate = new Date(service.attributes.start_date + "T00:00:00");
-        const endDate = new Date(service.attributes.end_date + "T00:00:00");
-        const validDays = service.attributes.valid_days;
-        const removedDates = service.attributes.removed_dates;
-        const addedDates = service.attributes.added_dates;
+    for (const jsonService of json.data) {
+        const service = buildService(jsonService.attributes, jsonService.id)
+        const startDate = new Date(service.startDate + "T00:00:00")
+        const endDate = new Date(service.endDate + "T00:00:00")
 
-        const relevantDetails = {"description": service.attributes.description, "id": service.id}
+        const relevantDetails = {"description": service.description, "id": service.id}
 
 
         while (startDate <= endDate) {
             const gtfsDay = toGTFSDayOfWeek(startDate.getDay());
             const isoDateString = toISODateString(startDate);
 
-            if (!validDays.includes(gtfsDay) || removedDates.includes(isoDateString)) {
+            if (!service.validDays.includes(gtfsDay) || service.removedDates.includes(isoDateString)) {
                 startDate.setDate(startDate.getDate() + 1);
                 continue;
             }
@@ -47,7 +68,7 @@ function createServiceDateMap(json: any) {
             startDate.setDate(startDate.getDate() + 1);
         }
 
-        for (const addedDate of addedDates) {
+        for (const addedDate of service.addedDates) {
             if (dateToServices.has(addedDate)) {
                 const existingServices = dateToServices.get(addedDate);
                 existingServices.push(relevantDetails);
