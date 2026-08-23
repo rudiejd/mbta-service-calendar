@@ -1,6 +1,6 @@
 <script lang="ts">
 
-const apiUrl = "https://api-v3.mbta.com/services?filter[route]=1"
+const apiUrl = "https://api-v3.mbta.com/services?filter[route]=Green-E"
 
 interface Service {
     startDate: string;
@@ -24,6 +24,21 @@ function toISODateString(date: Date) {
     return date.toISOString().split('T')[0];
 }
 
+
+function stringToColour(str: string): string {
+  let hash = 0;
+  str.split('').forEach(char => {
+    hash = char.charCodeAt(0) + ((hash << 5) - hash)
+  })
+  let color = '#'
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff
+    color += value.toString(16).padStart(2, '0')
+  }
+  return color
+}
+
+
 function buildService(attributes: any, id: string): Service {
 
     return {
@@ -44,7 +59,7 @@ function createServiceDateMap(json: any) {
         const startDate = new Date(service.startDate + "T00:00:00")
         const endDate = new Date(service.endDate + "T00:00:00")
 
-        const relevantDetails = {"description": service.description, "id": service.id}
+        const relevantDetails = {"description": service.description, "id": service.id, "color": stringToColour(service.id)}
 
 
         while (startDate <= endDate) {
@@ -105,11 +120,33 @@ let serviceToDates = $derived.by(async () => {
 {#await serviceToDates}
     <p>Loading...</p>
 {:then serviceToDates}
-    {#each [...serviceToDates.keys()].sort() as day}
-        <p>Day: {day}</p>
-        <p>Services: {JSON.stringify(serviceToDates.get(day))} </p>
-    {/each}
+    <div class="day-container">
+        {#each [...serviceToDates.keys()].sort() as day}
+            <div class="service-day" style="color: {serviceToDates.get(day)[0].color}">
+                <p>{day}</p>
+                <p>{serviceToDates.get(day)[0].id}</p>
+                <p>{serviceToDates.get(day)[0].description}</p>
+            </div>
+        {/each}
+    </div>
 {:catch}
     <p style="color: red">Encountered error from API:</p>
 {/await}
 
+
+<style>
+
+.service-day {
+    border-style: solid;
+    text-align: center;
+
+}
+
+.day-container {
+    display: grid;
+    grid-template-columns: auto auto auto auto auto auto auto;
+    font-size: 14px;
+}
+
+
+</style>
