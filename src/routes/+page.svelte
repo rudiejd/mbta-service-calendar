@@ -43,7 +43,6 @@ function stringToColour(str: string): string {
 
 
 function buildService(attributes: any, id: string): Service {
-
     return {
         startDate: attributes.start_date,
         endDate: attributes.end_date,
@@ -64,7 +63,6 @@ function createServiceDateMap(json: any) {
 
         const relevantDetails = {"description": service.description, "id": service.id, "color": stringToColour(service.id)}
 
-
         while (startDate <= endDate) {
             const gtfsDay = toGTFSDayOfWeek(startDate.getDay());
             const isoDateString = toISODateString(startDate);
@@ -76,7 +74,8 @@ function createServiceDateMap(json: any) {
 
 
             if (dateToServices.has(isoDateString)) {
-                const existingServices = dateToServices.get(startDate);
+                // the default handles if the service has been removed
+                const existingServices = dateToServices.get(startDate) || [];
                 existingServices.push(relevantDetails);
                 dateToServices.set(isoDateString, existingServices);
             } else {
