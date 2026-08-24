@@ -13,7 +13,8 @@ interface Service {
 
 let routeId = $state('Green-E');
 
-const apiUrl = "https://api-v3.mbta.com/services?filter[route]="
+let apiUrl = $state("https://api-v3.mbta.com")
+const apiQuery = "/services?filter[route]="
 
 function toGTFSDayOfWeek(day: number) {
     if (day == 0) {
@@ -102,7 +103,7 @@ function createServiceDateMap(json: any) {
 }
 
 let serviceToDates = $derived.by(async () => {
-    let res = await fetch(apiUrl + routeId);
+    let res = await fetch(apiUrl + apiQuery + routeId);
     if (res.ok) {
         let json = await res.json();
 
@@ -147,6 +148,11 @@ let routes = $derived.by(async () => {
             <option value="{routeId}">{routeId}</option>
         {/each}
     </select>
+</div>
+
+<div style="display: flex; flex-direction: column;">
+    <label>API</label>
+    <input type="text" bind:value={apiUrl} />
 </div>
 {/await}
 
