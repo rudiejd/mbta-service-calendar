@@ -1,6 +1,5 @@
 <script lang="ts">
 
-const apiUrl = "https://api-v3.mbta.com/services?filter[route]=Green-E"
 
 interface Service {
     startDate: string;
@@ -11,6 +10,10 @@ interface Service {
     description: string;
     id: string;
 }
+
+let routeId = $state('Green-E');
+
+const apiUrl = "https://api-v3.mbta.com/services?filter[route]="
 
 function toGTFSDayOfWeek(day: number) {
     if (day == 0) {
@@ -100,7 +103,7 @@ function createServiceDateMap(json: any) {
 }
 
 let serviceToDates = $derived.by(async () => {
-    let res = await fetch(apiUrl);
+    let res = await fetch(apiUrl + routeId);
     if (res.ok) {
         let json = await res.json();
 
@@ -110,10 +113,43 @@ let serviceToDates = $derived.by(async () => {
     }
 });
 
+function extractRoutes(json: any): string[] {
+    let routes = [];
+    for (const jsonRoute of json.data) {
+        routes.push(jsonRoute.id)
+    }
+
+    return routes;
+}
+
+let routes = $derived.by(async () => {
+    let res = await fetch("https://api-v3.mbta.com/routes");
+    if (res.ok) {
+        let json = await res.json();
+
+        return extractRoutes(json);
+    } else {
+        return Promise.reject();
+    }
+});
+
+
 
 </script>
 
 <h1>Service Calendar</h1>
+
+{#await routes}
+{:then routes}
+<div style="display: flex; flex-direction: column;">
+    <label>Route ID</label>
+    <select bind:value={routeId}>
+        {#each routes as routeId}
+            <option value="{routeId}">{routeId}</option>
+        {/each}
+    </select>
+</div>
+{/await}
 
 
 
