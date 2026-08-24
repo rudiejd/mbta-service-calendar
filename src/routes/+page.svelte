@@ -123,7 +123,7 @@ function extractRoutes(json: any): string[] {
 }
 
 let routes = $derived.by(async () => {
-    let res = await fetch("https://api-v3.mbta.com/routes");
+    let res = await fetch(`${apiUrl}/routes`);
     if (res.ok) {
         let json = await res.json();
 
