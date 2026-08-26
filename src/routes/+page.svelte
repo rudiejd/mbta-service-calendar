@@ -165,8 +165,11 @@ let routes = $derived.by(async () => {
         {#each [...serviceToDates.keys()].sort() as day}
             <div class="service-day" style="color: {serviceToDates.get(day)[0].color}">
                 <p>{day}</p>
-                <p>{serviceToDates.get(day)[0].id}</p>
-                <p>{serviceToDates.get(day)[0].description}</p>
+                {#each serviceToDates.get(day) as service} 
+                    <p>{service.id}</p>
+                    <p>{service.description}</p>
+                    <br />
+                {/each}
             </div>
         {/each}
     </div>
