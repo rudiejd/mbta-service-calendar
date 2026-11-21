@@ -14,6 +14,7 @@ interface Service {
 let routeId = $state('Green-E');
 
 let apiUrl = $state("https://api-v3.mbta.com")
+
 const apiQuery = "/services?filter[route]="
 
 function toGTFSDayOfWeek(day: number) {
@@ -55,12 +56,19 @@ function buildService(attributes: any, id: string): Service {
     }
 }
 
+// map of ISO datestring => services on that day
+// also returns maximum ISO date of all service
 function createServiceDateMap(json: any) {
     let dateToServices = new Map();
+    let maxDate = new Date().toISOString();
     for (const jsonService of json.data) {
         const service = buildService(jsonService.attributes, jsonService.id)
         const startDate = new Date(service.startDate + "T00:00:00")
         const endDate = new Date(service.endDate + "T00:00:00")
+
+        if (endDate.toISOString() > maxDate) {
+            maxDate = endDate.toISOString();
+        }
 
         const relevantDetails = {"description": service.description, "id": service.id, "color": stringToColour(service.id)}
 
@@ -99,10 +107,10 @@ function createServiceDateMap(json: any) {
     }
 
 
-    return dateToServices;
+    return {dateToServices: dateToServices, maxDate: maxDate};
 }
 
-let serviceToDates = $derived.by(async () => {
+let serviceData = $derived.by(async () => {
     let res = await fetch(apiUrl + apiQuery + routeId);
     if (res.ok) {
         let json = await res.json();
@@ -137,7 +145,10 @@ let routes = $derived.by(async () => {
 
 </script>
 
-<h1>Service Calendar</h1>
+<h1>MBTA Service Calendar</h1>
+
+<p>A tool for showing which schedules the MBTA is running in its <a href="https://gtfs.org">GTFS feed</a> </p>
+<p>Commonly used by in-house teams to understand which schedules have been published.</p>
 
 {#await routes}
 {:then routes}
@@ -154,42 +165,84 @@ let routes = $derived.by(async () => {
     <label>API</label>
     <input type="text" bind:value={apiUrl} />
 </div>
+
+<br />
 {/await}
 
 
 
-{#await serviceToDates}
+{#await serviceData}
     <p>Loading...</p>
-{:then serviceToDates}
-    <div class="day-container">
-        {#each [...serviceToDates.keys()].sort() as day}
-            <div class="service-day" style="color: {serviceToDates.get(day)[0].color}">
-                <p>{day}</p>
-                {#each serviceToDates.get(day) as service} 
-                    <p>{service.id}</p>
-                    <p>{service.description}</p>
-                    <br />
+{:then serviceData}
+    {let dateToServices = serviceData.dateToServices}
+    {let maxDate = serviceData.maxDate}
+
+    <table class="day-container">
+        <thead>
+            <tr>
+                <th>Sunday</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+                <th>Saturday</th>
+            </tr>
+        </thead>
+        <tbody>
+        {let startDay = new Date()}
+        <!-- find a way to do this not in the template -->
+        { let _ = startDay.setDate(startDay.getDate() - startDay.getDay()) }
+        {#each { length: 8 }, week}
+            <tr>
+                {#each { length: 7 }, day}
+                    {let daysOffset = week * 7 + day}
+                    {let offsetDate = new Date(startDay)}
+                    <!-- find a way to do this not in the template -->
+                    {let _ = offsetDate.setDate(offsetDate.getDate() + daysOffset)}
+                    {let offsetDateKey = toISODateString(offsetDate)}
+
+                    {#if dateToServices.has(offsetDateKey)}
+                        {let service = dateToServices.get(offsetDateKey)[0]}
+                        <td class="service-day" style="background-color: {service.color}" > 
+                           <p> {offsetDateKey}</p>
+                           <p> {service.id} </p>
+                           <p> {service.description} </p>
+                        </td>
+                    {:else if offsetDateKey < maxDate}
+                        <td class="service-day">
+                            {offsetDateKey}
+                            <p>No service</p>
+                            <p>(no service for this route on this day)</p>
+                        </td>
+                    {:else}
+                        <td class="service-day">
+                            {offsetDateKey}
+                            <p>Unknown service</p>
+                            <p>(schedule not yet available)</p>
+                        </td>
+                    {/if}
                 {/each}
-            </div>
+            </tr>
         {/each}
-    </div>
+        </tbody>
+    </table>
 {:catch}
     <p style="color: red">Encountered error from API:</p>
 {/await}
-
 
 <style>
 
 .service-day {
     border-style: solid;
     text-align: center;
-
+    mix-blend-mode: difference;
+    color: contrast-color(var(--backgroundColor));
 }
 
-.day-container {
-    display: grid;
-    grid-template-columns: auto auto auto auto auto auto auto;
-    font-size: 14px;
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
 }
 
 
