@@ -1,5 +1,6 @@
 <script lang="ts">
     import CalendarTable from '$lib/CalendarTable.svelte';
+    import RouteFilter from '$lib/RouteFilter.svelte';
 
 
 import { toISODateString } from '../lib/utils.ts';
@@ -14,7 +15,8 @@ interface Service {
     id: string;
 }
 
-let routeId = $state('Green-E');
+let routeId = $state('Red');
+const setRouteId = (value: string) => (routeId = value);
 
 let apiUrl = $state("https://api-v3.mbta.com")
 
@@ -141,6 +143,7 @@ let routes = $derived.by(async () => {
 
 
 
+
 </script>
 
 <h1>MBTA Service Calendar</h1>
@@ -149,26 +152,21 @@ let routes = $derived.by(async () => {
 <p>Commonly used by in-house teams to understand which schedules have been published.</p>
 
 {#await routes}
+    <p>Loading routes...</p>
 {:then routes}
-<div style="display: flex; flex-direction: column;">
-    <label>Route ID</label>
-    <select bind:value={routeId}>
-        {#each routes as routeId}
-            <option value="{routeId}">{routeId}</option>
-        {/each}
-    </select>
-</div>
+    <RouteFilter routes={routes} setRouteId={setRouteId} />
 
-<div style="display: flex; flex-direction: column;">
-    <label>API</label>
-    <input type="text" bind:value={apiUrl} />
-</div>
 
-<br />
+    <div style="display: flex; flex-direction: column;">
+        <label>API</label>
+        <input type="text" bind:value={apiUrl} />
+    </div>
+
 {/await}
+<br />
 
 
-
+<h2>Service for {routeId} </h2>
 {#await serviceData}
     <p>Loading...</p>
 {:then serviceData}
