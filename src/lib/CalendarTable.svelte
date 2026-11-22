@@ -55,7 +55,7 @@ function calculateOffsetDate(startDate: Date, days: number, weeks: number) {
 
                 {#if dateToServices.has(offsetDateKey)}
                     {let service = dateToServices.get(offsetDateKey)[0]}
-                    <td class="service-day" style="background-color: {service.color}" > 
+                    <td class="service-day" style="background-color: {service.color}; --backgroundColor: {service.color}" > 
                        <p> {offsetDateKey}</p>
                        <p> {service.id} </p>
                        <p> {service.description} </p>
