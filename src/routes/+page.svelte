@@ -129,7 +129,7 @@ function extractRoutes(json: any): string[] {
 }
 
 let routes = $derived.by(async () => {
-    let res = await fetch(`${apiUrl}/routes`);
+    let res = await fetch(`${apiUrl}/routes?filter[listed_route]=false`);
     if (res.ok) {
         let json = await res.json();
 
