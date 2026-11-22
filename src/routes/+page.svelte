@@ -1,5 +1,8 @@
 <script lang="ts">
+    import CalendarTable from '$lib/CalendarTable.svelte';
 
+
+import { toISODateString } from '../lib/utils.ts';
 
 interface Service {
     startDate: string;
@@ -24,11 +27,6 @@ function toGTFSDayOfWeek(day: number) {
 
     return day;
 }
-
-function toISODateString(date: Date) {
-    return date.toISOString().split('T')[0];
-}
-
 
 function stringToColour(str: string): string {
   let hash = 0;
@@ -177,73 +175,8 @@ let routes = $derived.by(async () => {
     {let dateToServices = serviceData.dateToServices}
     {let maxDate = serviceData.maxDate}
 
-    <table class="day-container">
-        <thead>
-            <tr>
-                <th>Sunday</th>
-                <th>Monday</th>
-                <th>Tuesday</th>
-                <th>Wednesday</th>
-                <th>Thursday</th>
-                <th>Friday</th>
-                <th>Saturday</th>
-            </tr>
-        </thead>
-        <tbody>
-        {let startDay = new Date()}
-        <!-- find a way to do this not in the template -->
-        { let _ = startDay.setDate(startDay.getDate() - startDay.getDay()) }
-        {#each { length: 8 }, week}
-            <tr>
-                {#each { length: 7 }, day}
-                    {let daysOffset = week * 7 + day}
-                    {let offsetDate = new Date(startDay)}
-                    <!-- find a way to do this not in the template -->
-                    {let _ = offsetDate.setDate(offsetDate.getDate() + daysOffset)}
-                    {let offsetDateKey = toISODateString(offsetDate)}
+    <CalendarTable dateToServices={dateToServices} maxDate={maxDate}/>
 
-                    {#if dateToServices.has(offsetDateKey)}
-                        {let service = dateToServices.get(offsetDateKey)[0]}
-                        <td class="service-day" style="background-color: {service.color}" > 
-                           <p> {offsetDateKey}</p>
-                           <p> {service.id} </p>
-                           <p> {service.description} </p>
-                        </td>
-                    {:else if offsetDateKey < maxDate}
-                        <td class="service-day">
-                            {offsetDateKey}
-                            <p>No service</p>
-                            <p>(no service for this route on this day)</p>
-                        </td>
-                    {:else}
-                        <td class="service-day">
-                            {offsetDateKey}
-                            <p>Unknown service</p>
-                            <p>(schedule not yet available)</p>
-                        </td>
-                    {/if}
-                {/each}
-            </tr>
-        {/each}
-        </tbody>
-    </table>
 {:catch}
     <p style="color: red">Encountered error from API:</p>
 {/await}
-
-<style>
-
-.service-day {
-    border-style: solid;
-    text-align: center;
-    mix-blend-mode: difference;
-    color: contrast-color(var(--backgroundColor));
-}
-
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
-
-
-</style>
